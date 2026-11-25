@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Land Acquisition Portal | Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Madurai:wght@400;500;600;700&family=Noto+Serif+Tamil:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --ink:#16241d; --muted:#586860; --line:#d6dfd8; --paper:#eef2ee; --panel:#fff;
+  --g9:#123225; --g7:#1f5a40; --g1:#e3efe7; --turmeric:#e3a81c;
+  --ok:#1d5c38; --ok-bg:#e1f0e6; --wip:#7a5200; --wip-bg:#faeece; --bad:#8f2b1c; --bad-bg:#f7e0db;
+  --sans:"Hind Madurai","Noto Sans Tamil",Latha,Arial,sans-serif;
+  --serif:"Noto Serif Tamil","Hind Madurai",Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:16px;line-height:1.6}
+.shell{display:grid;grid-template-columns:264px 1fr;min-height:100vh}
+
+/* sidebar */
+aside{background:var(--g9);color:#e8f1ec;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:22px 16px;z-index:2000}
+.brand{display:flex;gap:12px;align-items:center;padding:0 8px 20px;border-bottom:1px solid rgba(255,255,255,.14)}
+.brand svg{flex:none}
+.brand b{font-family:var(--serif);font-size:15px;line-height:1.35;font-weight:700}
+nav{margin-top:18px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+nav a{color:#cfe0d6;text-decoration:none;padding:9px 12px;border-radius:6px;border-left:3px solid transparent;font-size:15px}
+nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+nav a.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--turmeric);font-weight:600}
+.me{border-top:1px solid rgba(255,255,255,.14);padding-top:14px;display:grid;gap:10px}
+.who-row{display:flex;gap:10px;align-items:center;font-size:14px;min-width:0}
+.who-row .av{flex:none;width:34px;height:34px;border-radius:50%;background:var(--turmeric);color:var(--g9);display:grid;place-items:center;font-weight:700}
+.who-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me .btns{display:flex;gap:6px}
+.me button{flex:1;margin:0;padding:7px 8px;font-size:13px;background:transparent;color:#e8f1ec;border:1px solid rgba(255,255,255,.3)}
+.me button:hover{background:rgba(255,255,255,.1)}
+.me button.on{background:#fff;color:var(--g9);border-color:#fff}
+
+main{min-width:0}
+.wrap{max-width:1040px;margin:0 auto;padding:0 28px 40px}
+
+/* hero */
+.hero{background:var(--g9);color:#fff;position:relative;overflow:hidden;padding:44px 0 34px}
+.hero .wrap{position:relative;padding-bottom:0}
+.hero svg.parcels{position:absolute;top:-44px;right:0;height:calc(100% + 78px);width:62%;min-width:420px;opacity:.9;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 45%);mask-image:linear-gradient(90deg,transparent,#000 45%)}
+.hero h1{font-family:var(--serif);font-size:clamp(26px,4vw,38px);line-height:1.3;max-width:15em;position:relative}
+.hero .greet{margin-top:10px;font-size:18px;position:relative}
+.hero .sub{color:#b9d0c3;position:relative}
+.stats{display:flex;flex-wrap:wrap;gap:12px 36px;margin-top:28px;position:relative}
+.stat b{display:block;font-family:var(--serif);font-size:28px;line-height:1.2}
+.stat span{font-size:14px;color:#b9d0c3}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:22px;max-width:420px;position:relative}
+.split i{display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#cfe0d6;margin-top:8px;position:relative}
+.legend em{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+.legend em::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--c)}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:26px;margin-top:22px}
+h2{font-family:var(--serif);font-size:21px;line-height:1.4;color:var(--g7);margin-bottom:10px}
+h3{font-size:17px;line-height:1.4}
+p{margin-bottom:8px;max-width:70ch}
+.lead{color:var(--muted)}
+.about{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px}
+.about .full{grid-column:1/-1}
+.about h2{margin-top:10px;font-size:18px}
+.checks{list-style:none}
+.checks li{padding-left:26px;position:relative;margin-bottom:4px}
+.checks li::before{content:"";position:absolute;left:3px;top:.55em;width:10px;height:6px;border-left:2px solid var(--g7);border-bottom:2px solid var(--g7);transform:rotate(-45deg)}
+.tech{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.tech li{border:1px solid var(--line);border-radius:6px;padding:8px 12px;line-height:1.45}
+.tech b{display:block;color:var(--g7)}
+.tech span{font-size:14px;color:var(--muted)}
+.small-note{color:var(--muted);font-size:14px;margin-top:12px}
+
+/* projects */
+.proj{display:grid;grid-template-columns:minmax(0,1fr) 150px 120px auto;gap:10px 18px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.proj:first-of-type{margin-top:12px}
+.pid{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.proj h3{margin:0}
+.where{margin:0;font-size:14px;color:var(--muted)}
+.ha b{font-size:17px}
+.bar{height:5px;background:var(--g1);border-radius:3px;margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--g7)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:999px;font-size:13px;font-weight:600;width:max-content}
+.tag::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.t-done{color:var(--ok);background:var(--ok-bg)}
+.t-prog{color:var(--wip);background:var(--wip-bg)}
+.t-pend{color:var(--bad);background:var(--bad-bg)}
+.acts{display:flex;gap:6px}
+
+/* forms & buttons */
+label{display:block;font-weight:600;font-size:14px;margin-top:14px}
+input,select,textarea{width:100%;padding:10px 12px;margin:6px 0 4px;border:1px solid #b4c1b8;border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--g7);box-shadow:0 0 0 3px rgba(31,90,64,.18)}
+button,.action-link{display:inline-block;background:var(--g7);color:#fff;padding:10px 18px;border:1px solid var(--g7);border-radius:6px;cursor:pointer;text-decoration:none;font:inherit;font-weight:600;font-size:15px;margin:12px 8px 0 0}
+button:hover,.action-link:hover{background:var(--g9);border-color:var(--g9)}
+.action-link{background:#fff;color:var(--g7)}
+.action-link:hover{background:var(--g1);color:var(--g9)}
+.green-btn{background:var(--turmeric);border-color:var(--turmeric);color:var(--g9)}
+.green-btn:hover{background:#c9930f;border-color:#c9930f}
+.danger{background:#fff;color:var(--bad);border-color:var(--bad)}
+.danger:hover{background:var(--bad-bg);border-color:var(--bad)}
+.proj button,.saved-item button,.saved-item a{margin:0;padding:6px 12px;font-size:14px}
+.proj .ghost,.saved-item .ghost{background:#fff;color:var(--g7)}
+.proj .ghost:hover,.saved-item .ghost:hover{background:var(--g1)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--turmeric);outline-offset:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.result{margin-top:16px;padding:12px 16px;background:#f2f7f3;border-left:4px solid var(--g7);border-radius:0 6px 6px 0;line-height:1.8;overflow-wrap:anywhere}
+#map{height:420px;width:100%;border-radius:8px;margin-top:16px;background:var(--g1);isolation:isolate;border:1px solid var(--line)}
+.saved-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.saved-item>span:last-child{display:flex;gap:6px}
+hr{margin:22px 0;border:0;border-top:1px solid var(--line)}
+footer{text-align:center;color:var(--muted);font-size:14px;padding:10px 28px 30px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--g9);color:#fff;padding:10px 20px;border-radius:8px;opacity:0;pointer-events:none;transition:.2s;z-index:5000}
+#toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  aside{position:static;height:auto;padding:12px 12px 8px}
+  .brand{padding-bottom:10px;border:0}
+  nav{flex-direction:row;overflow-x:auto;margin-top:0;padding-bottom:6px;flex:none}
+  nav a{white-space:nowrap;border-left:0;border-bottom:3px solid transparent;border-radius:6px 6px 0 0}
+  nav a.active{border-bottom-color:var(--turmeric)}
+  .me{border:0;padding-top:6px;grid-template-columns:1fr auto;align-items:center}
+  .me button{flex:none}
+}
+@media (max-width:700px){
+  .wrap{padding:0 14px 30px}
+  .panel{padding:18px}
+  .about,.row2{grid-template-columns:1fr}
+  .proj{grid-template-columns:1fr 1fr}
+  .proj>div:first-child,.acts{grid-column:1/-1}
+  #map{height:320px}
+  .hero svg.parcels{opacity:.35;width:100%}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+    <div class="brand">
+        <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><rect width="38" height="38" rx="8" fill="#e3a81c"/><path d="M7 12l11-4 13 5-3 16-14 3z" fill="none" stroke="#123225" stroke-width="2.4" stroke-linejoin="round"/><circle cx="19" cy="19" r="3" fill="#123225"/></svg>
+        <b data-t="நில எடுப்பு இணையதளம்">Land Acquisition Portal</b>
+    </div>
+    <nav id="sideNav">
+        <a href="#top" data-t="முகப்பு">Home</a>
+        <a href="#problem" data-t="பற்றி">About</a>
+        <a href="#places" data-t="திட்டங்கள்">Projects</a>
+        <a href="#mapSection" data-t="வரைபடம்">Map</a>
+        <a href="#gps" data-t="GPS நில அளவை">GPS Survey</a>
+        <a href="#compensation" data-t="இழப்பீடு">Compensation</a>
+        <a href="#grievance" data-t="குறைதீர்ப்பு">Grievance</a>
+        <a href="#saved" data-t="சேமித்தவை">Saved</a>
+    </nav>
+    <div class="me">
+        <div class="who-row"><div class="av" id="avatar">U</div><span id="who2"></span></div>
+        <div class="btns">
+            <button type="button" id="bEn" class="on" onclick="setLang('en')">EN</button>
+            <button type="button" id="bTa" onclick="setLang('ta')">தமிழ்</button>
+            <button type="button" onclick="logout()" data-t="வெளியேறு">Logout</button>
+        </div>
+    </div>
+</aside>
+<main>
+<section class="hero" id="top">
+    <svg class="parcels" viewBox="0 0 600 320" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+        <g fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M20 40L150 25L170 110L30 130Z"/><path d="M150 25L300 50L290 140L170 110Z"/><path d="M300 50L450 30L470 120L290 140Z"/><path d="M450 30L590 60L575 150L470 120Z"/>
+            <path d="M30 130L170 110L190 210L40 230Z"/><path d="M170 110L290 140L310 230L190 210Z"/><path d="M470 120L575 150L585 240L450 225Z"/>
+            <path d="M40 230L190 210L205 310L50 315Z"/><path d="M190 210L310 230L320 315L205 310Z"/><path d="M310 230L450 225L460 315L320 315Z"/><path d="M450 225L585 240L590 315L460 315Z"/>
+        </g>
+        <path d="M290 140L470 120L450 225L310 230Z" fill="#e3a81c" stroke="#e3a81c" stroke-width="2" stroke-dasharray="7 5" stroke-linejoin="round"/>
+        <g font-family="Hind Madurai,Arial,sans-serif" font-size="13" fill="rgba(255,255,255,.5)">
+            <text x="60" y="85">118/2</text><text x="205" y="80">119/1A</text><text x="350" y="95">121/4</text><text x="495" y="98">122</text>
+            <text x="80" y="185">130/3B</text><text x="215" y="185">131/1</text><text x="505" y="195">134/2</text><text x="100" y="275">140</text><text x="235" y="278">141/5</text><text x="365" y="285">142/1A</text><text x="500" y="285">143</text>
+        </g>
+        <text x="345" y="187" font-family="Hind Madurai,Arial,sans-serif" font-size="15" font-weight="700" fill="#123225">132/4A</text>
+    </svg>
+    <div class="wrap">
+        <h1 data-t="நில எடுப்பு இணையதளம்">Land Acquisition Portal</h1>
+        <p class="greet"><span data-t="வரவேற்கிறோம்,">Welcome,</span> <b id="who">User</b></p>
+        <p class="sub" data-t="கணக்கெடுப்பு • பதிவு • இழப்பீடு • குறைதீர்ப்பு">Survey • Record • Compensation • Grievance</p>
+        <div class="stats" id="stats"></div>
+        <div class="split" id="split"></div>
+        <div class="legend" id="legend"></div>
+    </div>
+</section>
+<div class="wrap">
+
+    <section class="panel" id="problem">
+        <div class="about">
+            <div>
+                <h2 data-t="1. சிக்கல் அறிக்கை">1. Problem Statement</h2>
+                <p data-t="நில எடுப்பு விவரங்கள், சர்வே எண்கள், இழப்பீடு மற்றும் குறைகள் பல இடங்களில் பிரிந்து கிடப்பதால் நில உரிமையாளர்களும் அதிகாரிகளும் தகவல்களைத் தேடுவதில் சிரமப்படுகின்றனர்.">
+            Land acquisition details, survey numbers, compensation and grievances are spread across many places, so landowners and officials find it hard to get information quickly.
+        </p>
+            </div>
+            <div>
+                <h2 data-t="2. முன்மொழியப்பட்ட தீர்வு">2. Proposed Solution</h2>
+                <p data-t="நில எடுப்பு இணையதளம் ஒரே இடத்தில் திட்டங்களைப் பார்க்கவும், வரைபடத்தில் இடங்களைக் காணவும், GPS மூலம் சர்வே இடங்களைப் பதிவு செய்யவும், இழப்பீட்டை மதிப்பிடவும், குறைகளைப் பதிவு செய்யவும் உதவுகிறது.">
+            The Land Acquisition Portal provides a single website to view projects, see locations on a map, record survey locations using GPS, estimate compensation and register grievances.
+        </p>
+            </div>
+            <div class="full">
+                <h2 data-t="3. நோக்கங்கள்">3. Objectives</h2>
+                <ul class="checks">
+                    <li data-t="நில எடுப்பு நடைமுறையை எளிமையாக்குதல்.">Simplify the land acquisition process.</li>
+                    <li data-t="38 மாவட்டங்களின் திட்டங்களை ஒரே இடத்தில் காட்டுதல்.">Show projects of all 38 districts in one place.</li>
+                    <li data-t="GPS மூலம் சர்வே இடங்களைப் பதிவு செய்தல்.">Record survey locations using GPS.</li>
+                    <li data-t="இழப்பீட்டுத் தொகையை மதிப்பிடுதல்.">Estimate compensation amounts.</li>
+                    <li data-t="பொதுமக்கள் குறைகளைப் பதிவு செய்தல்.">Register public grievances.</li>
+                    <li data-t="சேமித்த இடங்களை உலாவியில் வைத்தல்.">Save locations in the browser.</li>
+                </ul>
+            </div>
+            <div class="full">
+                <h2 data-t="4. பயன்படுத்திய தொழில்நுட்பங்கள்">4. Technologies Used</h2>
+                <ul class="tech">
+                    <li><b>HTML</b><span data-t="இணையதள அமைப்பு.">Website structure.</span></li>
+                    <li><b>CSS</b><span data-t="இணையதள வடிவமைப்பு.">Website design.</span></li>
+                    <li><b>JavaScript</b><span data-t="செயல்பாடுகள்.">Interactive features.</span></li>
+                    <li><b>Leaflet.js</b><span data-t="வரைபடம்.">Interactive map.</span></li>
+                    <li><b>OpenStreetMap</b><span data-t="வரைபட ஓடுகள்.">Map tiles.</span></li>
+                    <li><b>Browser GPS</b><span data-t="தற்போதைய இடம் பெற.">Capture current location.</span></li>
+                    <li><b>Local Storage</b><span data-t="சேமித்தவற்றை உலாவியில் வைக்க.">Save data in the browser.</span></li>
+                </ul>
+            </div>
+        </div>
+        <p class="small-note" data-t="இது மாதிரி இணையதளம், அதிகாரப்பூர்வ அரசு தளம் அல்ல. திட்டங்கள், எண்கள் மற்றும் இழப்பீட்டுக் கணக்கு அனைத்தும் மாதிரியே.">
+            This is a demo website, not an official government site. Projects, figures and the compensation estimate are samples only.
+        </p>
+    </section>
+
+    <section class="panel" id="places">
+        <h2 data-t="நில எடுப்புத் திட்டங்கள்">Land Acquisition Projects</h2>
+        <p class="lead" data-t="ஒரு திட்டத்தை வரைபடத்தில் காண அல்லது சேமிக்க தேர்ந்தெடுக்கவும்.">Select a project to view it on the map or save it.</p>
+        <div id="projectGrid"></div>
+    </section>
+
+    <section class="panel" id="mapSection">
+        <h2 data-t="ஊடாடும் வரைபடம்">Interactive Map</h2>
+        <p class="lead" data-t="ஒரு மாவட்டத்தைத் தேர்ந்தெடுத்து அதன் தோராயமான இடத்தைக் காணவும்.">Select a district to view its approximate location.</p>
+        <label for="mapDistrict" data-t="மாவட்டத்தைத் தேர்க:">Choose District:</label>
+        <select id="mapDistrict"></select>
+        <button type="button" onclick="showSelectedMap()" data-t="வரைபடத்தில் காட்டு">Show on Map</button>
+        <a id="routeLink" class="action-link" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" data-t="Google Maps திற">Open Google Maps</a>
+        <div id="map"></div>
+        <div id="mapResult" class="result" aria-live="polite" data-t="இடத்தைக் காண ஒரு மாவட்டத்தைத் தேர்ந்தெடுக்கவும்.">Select a district to see its location.</div>
+        <p class="small-note" data-t="வரைபடத்திற்கு இணைய இணைப்பு தேவை. இடங்கள் தோராயமானவை.">Map requires an internet connection. Locations are approximate.</p>
+    </section>
+
+    <section class="panel" id="gps">
+        <h2 data-t="GPS நில அளவை">GPS Land Survey</h2>
+        <p class="lead" data-t="உங்கள் தற்போதைய GPS இடத்தைப் பெற்று, சர்வே விவரங்களுடன் சேமிக்கவும்.">Capture your current GPS location and save it with survey details.</p>
+        <button type="button" class="green-btn" onclick="getGPS()" data-t="📍 என் தற்போதைய GPS இடத்தைப் பயன்படுத்து">📍 Use My Current GPS Location</button>
+        <div id="gpsResult" class="result" aria-live="polite" data-t="உங்கள் அட்சரேகை, தீர்க்கரேகை இங்கே தெரியும்.">Your latitude and longitude will appear here.</div>
+        <div class="row2">
+            <div><label for="lat" data-t="அட்சரேகை (Latitude):">Latitude:</label><input type="number" step="any" id="lat" placeholder="e.g. 11.0168"></div>
+            <div><label for="lng" data-t="தீர்க்கரேகை (Longitude):">Longitude:</label><input type="number" step="any" id="lng" placeholder="e.g. 76.9558"></div>
+            <div><label for="svDistrict" data-t="மாவட்டம்:">District:</label><select id="svDistrict"></select></div>
+            <div><label for="svTaluk" data-t="வட்டம் (Taluk):">Taluk:</label><input type="text" id="svTaluk"></div>
+            <div><label for="svVillage" data-t="கிராமம்:">Village:</label><input type="text" id="svVillage"></div>
+            <div><label for="svNo" data-t="சர்வே எண்:">Survey No.:</label><input type="text" id="svNo" placeholder="e.g. 123/4A"></div>
+            <div><label for="svPatta" data-t="பட்டா எண்:">Patta No.:</label><input type="text" id="svPatta"></div>
+            <div><label for="svOwner" data-t="உரிமையாளர் பெயர்:">Owner name:</label><input type="text" id="svOwner"></div>
+        </div>
+        <button type="button" onclick="saveSurvey()" data-t="சர்வே இடத்தைச் சேமி">Save Survey Location</button>
+        <p class="small-note" data-t="தொலைபேசியில் GPS துல்லியமாக இருக்கும். அனுமதி மறுத்தால் எண்களைக் கைமுறையாக உள்ளிடலாம்.">GPS is most accurate on a phone. If permission is denied, enter the numbers manually.</p>
+    </section>
+
+    <section class="panel" id="compensation">
+        <h2 data-t="இழப்பீட்டு மதிப்பீடு">Compensation Estimator</h2>
+        <p class="lead" data-t="நில அளவு மற்றும் சந்தை மதிப்பை உள்ளிட்டு மாதிரி இழப்பீட்டை அறியவும்.">Enter land area and market value to see a sample compensation estimate.</p>
+        <div class="row2">
+            <div><label for="cArea" data-t="நிலப் பரப்பு:">Land area:</label><input type="number" step="any" min="0" id="cArea" placeholder="e.g. 2.5"></div>
+            <div><label for="cUnit" data-t="அலகு:">Unit:</label><select id="cUnit"></select></div>
+            <div><label for="cRate" data-t="ஒரு ஏக்கருக்கு சந்தை மதிப்பு (₹):">Market value per acre (₹):</label><input type="number" step="any" min="0" id="cRate" placeholder="e.g. 1500000"></div>
+            <div><label for="cFactor" data-t="பெருக்கல் காரணி:">Multiplication factor:</label>
+                <select id="cFactor"><option value="1">1.0</option><option value="1.5">1.5</option><option value="2">2.0</option></select></div>
+        </div>
+        <button type="button" onclick="calcComp()" data-t="இழப்பீட்டைக் கணக்கிடு">Calculate Compensation</button>
+        <div id="compResult" class="result" aria-live="polite" data-t="உங்கள் மதிப்பீடு இங்கே தெரியும்.">Your estimate will appear here.</div>
+        <p class="small-note" data-t="இது மாதிரி மதிப்பீடு மட்டுமே; சட்டப்படியான இழப்பீடு அல்ல. சட்டப்படி 100% ஆறுதல் தொகை சேர்க்கப்பட்டுள்ளது.">This is a sample estimate only, not a legal award. A 100% solatium is added in this demo.</p>
+    </section>
+
+    <section class="panel" id="grievance">
+        <h2 data-t="பொதுமக்கள் குறைதீர்ப்பு">Public Grievance</h2>
+        <label for="gName" data-t="பெயர்:">Name:</label>
+        <input type="text" id="gName">
+        <label for="gProject" data-t="திட்டம்:">Project:</label>
+        <select id="gProject"></select>
+        <label for="gText" data-t="உங்கள் குறை:">Your grievance:</label>
+        <textarea id="gText" rows="4"></textarea>
+        <button type="button" onclick="submitGrievance()" data-t="குறையைச் சமர்ப்பி">Submit Grievance</button>
+        <div id="gResult" class="result" aria-live="polite" data-t="உங்கள் குறை எண் இங்கே தெரியும்.">Your grievance number will appear here.</div>
+    </section>
+
+    <section class="panel" id="saved">
+        <h2 data-t="சேமித்த திட்டங்கள்">Saved Projects</h2>
+        <div id="favList"></div>
+        <hr>
+        <h2 data-t="சேமித்த சர்வே இடங்கள்">Saved Survey Locations</h2>
+        <div id="svList"></div>
+        <button type="button" class="danger" onclick="clearAll()" data-t="அனைத்தையும் அழி">Clear All</button>
+    </section>
+</div>
+<footer><p data-t="நில எடுப்பு இணையதளம் • மாதிரி திட்டம் • அதிகாரப்பூர்வ அரசு தளம் அல்ல">Land Acquisition Portal • Demo Project • Not an official government website</p></footer>
+</main>
+</div>
+<div id="toast" role="status"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var params = new URLSearchParams(location.search);
+var USER = params.get("user");
+var LANG = params.get("lang") || "en";
+try {
+    if (USER) { sessionStorage.setItem("laUser", USER); }
+    else { USER = sessionStorage.getItem("laUser"); }
+} catch (e) {}
+if (!USER) { location.href = "tn_index.html"; }
+document.getElementById("who").textContent = USER || "User";
+document.getElementById("who2").textContent = USER || "User";
+document.getElementById("avatar").textContent = (USER || "U").charAt(0).toUpperCase();
+
+function T(en, ta) { return LANG === "ta" ? ta : en; }
+function $(id) { return document.getElementById(id); }
+function logout() {
+    try { sessionStorage.removeItem("laUser"); } catch (e) {}
+    location.href = "tn_index.html?lang=" + LANG;
+}
+
+/* ---------- DATA ---------- */
+// [English, Tamil, latitude, longitude]
+var DIST = [["Ariyalur","அரியலூர்",11.14,79.08],["Chengalpattu","செங்கல்பட்டு",12.69,79.98],["Chennai","சென்னை",13.08,80.27],["Coimbatore","கோயம்புத்தூர்",11.0,76.96],["Cuddalore","கடலூர்",11.75,79.77],["Dharmapuri","தருமபுரி",12.13,78.16],["Dindigul","திண்டுக்கல்",10.36,77.98],["Erode","ஈரோடு",11.34,77.72],["Kallakurichi","கள்ளக்குறிச்சி",11.74,78.96],["Kancheepuram","காஞ்சிபுரம்",12.83,79.7],["Kanniyakumari","கன்னியாகுமரி",8.09,77.54],["Karur","கரூர்",10.96,78.08],["Krishnagiri","கிருஷ்ணகிரி",12.52,78.21],["Madurai","மதுரை",9.92,78.12],["Mayiladuthurai","மயிலாடுதுறை",11.1,79.65],["Nagapattinam","நாகப்பட்டினம்",10.77,79.84],["Namakkal","நாமக்கல்",11.22,78.17],["Nilgiris","நீலகிரி",11.41,76.7],["Perambalur","பெரம்பலூர்",11.23,78.88],["Pudukkottai","புதுக்கோட்டை",10.38,78.82],["Ramanathapuram","இராமநாதபுரம்",9.37,78.83],["Ranipet","இராணிப்பேட்டை",12.93,79.33],["Salem","சேலம்",11.66,78.15],["Sivagangai","சிவகங்கை",9.85,78.48],["Tenkasi","தென்காசி",8.96,77.31],["Thanjavur","தஞ்சாவூர்",10.79,79.14],["Theni","தேனி",10.01,77.48],["Thoothukudi","தூத்துக்குடி",8.76,78.13],["Tiruchirappalli","திருச்சிராப்பள்ளி",10.79,78.69],["Tirunelveli","திருநெல்வேலி",8.73,77.7],["Tirupathur","திருப்பத்தூர்",12.49,78.57],["Tiruppur","திருப்பூர்",11.11,77.34],["Tiruvallur","திருவள்ளூர்",13.14,79.91],["Tiruvannamalai","திருவண்ணாமலை",12.23,79.07],["Tiruvarur","திருவாரூர்",10.77,79.64],["Vellore","வேலூர்",12.92,79.13],["Viluppuram","விழுப்புரம்",11.94,79.49],["Virudhunagar","விருதுநகர்",9.59,77.96]];
+
+// [id, English, Tamil, district index, hectares, status]
+var PROJECTS = [
+ ["TN-1001","Chengalpattu–Tindivanam Road Widening","செங்கல்பட்டு–திண்டிவனம் சாலை அகலப்படுத்தல்",1,412.5,"done"],
+ ["TN-1002","Coimbatore Outer Ring Road","கோயம்புத்தூர் வெளிவட்டச் சாலை",3,286.2,"prog"],
+ ["TN-1003","Madurai–Thoothukudi Four Laning","மதுரை–தூத்துக்குடி நான்கு வழிச்சாலை",13,530.8,"prog"],
+ ["TN-1004","Salem–Namakkal Bypass","சேலம்–நாமக்கல் புறவழிச்சாலை",22,310.4,"done"],
+ ["TN-1005","Tiruchirappalli–Thanjavur Widening","திருச்சிராப்பள்ளி–தஞ்சாவூர் அகலப்படுத்தல்",28,344.9,"pend"],
+ ["TN-1006","Tirunelveli–Kanniyakumari Highway","திருநெல்வேலி–கன்னியாகுமரி நெடுஞ்சாலை",29,198.3,"pend"],
+ ["TN-1007","Vellore Ring Road","வேலூர் வட்டச் சாலை",35,220.0,"prog"]
+];
+var STATUS = {
+ done: ["Completed","நிறைவு","t-done"],
+ prog: ["In Progress","நடைபெறுகிறது","t-prog"],
+ pend: ["Pending","நிலுவை","t-pend"]
+};
+var UNITS = [["Acre","ஏக்கர்",1],["Hectare","ஹெக்டேர்",2.47105],["Cent","சென்ட்",0.01]];
+
+function dName(i) { return DIST[i][LANG === "ta" ? 1 : 0]; }
+function pName(p) { return p[LANG === "ta" ? 2 : 1]; }
+
+/* ---------- STORAGE ---------- */
+function load(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; }
+}
+function save(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+}
+var favs = load("tnFavs");
+var surveys = load("tnSurveys");
+var grievances = load("tnGrievances");
+
+/* ---------- MAP ---------- */
+var map = null, layer = null;
+if (window.L) {
+    map = L.map("map", { minZoom: 6, maxBounds: [[6.5, 74.5], [15, 82.5]] })
+           .fitBounds([[7.7, 76.0], [13.9, 80.7]]);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap"
+    }).addTo(map);
+    layer = L.layerGroup().addTo(map);
+} else {
+    $("map").innerHTML = "<p style='padding:20px'>Map could not load. Check your internet connection.</p>";
+}
+
+function setLink(lat, lng) {
+    $("routeLink").href = "https://www.google.com/maps?q=" + lat + "," + lng;
+}
+
+function showDistrict(i) {
+    var d = DIST[i];
+    var inDistrict = PROJECTS.filter(function (p) { return p[3] === i; });
+    if (map) {
+        layer.clearLayers();
+        L.marker([d[2], d[3]]).addTo(layer).bindPopup("<b>" + dName(i) + "</b>").openPopup();
+        map.setView([d[2], d[3]], 10);
+    }
+    setLink(d[2], d[3]);
+    var html = "<b>" + dName(i) + "</b><br>" + T("Approx. location: ", "தோராய இடம்: ") + d[2] + ", " + d[3] + "<br>";
+    if (inDistrict.length) {
+        html += T("Projects: ", "திட்டங்கள்: ") + inDistrict.map(function (p) { return p[0] + " – " + pName(p); }).join("; ");
+    } else {
+        html += T("No sample projects in this district.", "இந்த மாவட்டத்தில் மாதிரித் திட்டங்கள் இல்லை.");
+    }
+    $("mapResult").innerHTML = html;
+}
+function showSelectedMap() { showDistrict(+$("mapDistrict").value); }
+function showProject(id) {
+    var p = PROJECTS.filter(function (x) { return x[0] === id; })[0];
+    if (!p) return;
+    $("mapDistrict").value = p[3];
+    showDistrict(p[3]);
+    $("mapSection").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ---------- PROJECTS & FAVOURITES ---------- */
+function drawProjects() {
+    var maxHa = Math.max.apply(null, PROJECTS.map(function (p) { return p[4]; }));
+    $("projectGrid").innerHTML = PROJECTS.map(function (p) {
+        var s = STATUS[p[5]];
+        return '<article class="proj"><div><span class="pid">' + p[0] + "</span><h3>" + pName(p) + '</h3><p class="where">' + dName(p[3]) + "</p></div>" +
+            '<div class="ha"><b>' + p[4] + "</b> " + T("Ha", "ஹெ") + '<div class="bar"><i style="width:' + Math.round(p[4] / maxHa * 100) + '%"></i></div></div>' +
+            '<span class="tag ' + s[2] + '">' + s[LANG === "ta" ? 1 : 0] + "</span>" +
+            '<div class="acts"><button onclick="showProject(\'' + p[0] + '\')">' + T("View Location", "இடத்தைக் காண்") + "</button>" +
+            '<button class="ghost" onclick="addFav(\'' + p[0] + '\')">⭐ ' + T("Save", "சேமி") + "</button></div></article>";
+    }).join("");
+}
+function drawStats() {
+    var tot = 0, c = { done: 0, prog: 0, pend: 0 };
+    PROJECTS.forEach(function (p) { tot += p[4]; c[p[5]]++; });
+    var cols = { done: "#5fbf86", prog: "#e3a81c", pend: "#e0674f" };
+    $("stats").innerHTML =
+        '<div class="stat"><b>' + PROJECTS.length + "</b><span>" + T("Projects", "திட்டங்கள்") + "</span></div>" +
+        '<div class="stat"><b>' + Math.round(tot).toLocaleString("en-IN") + "</b><span>" + T("Hectares", "ஹெக்டேர்") + "</span></div>" +
+        '<div class="stat"><b>' + DIST.length + "</b><span>" + T("Districts", "மாவட்டங்கள்") + "</span></div>";
+    $("split").innerHTML = Object.keys(c).map(function (k) { return '<i style="width:' + c[k] / PROJECTS.length * 100 + "%;background:" + cols[k] + '"></i>'; }).join("");
+    $("legend").innerHTML = Object.keys(c).map(function (k) { return '<em style="--c:' + cols[k] + '">' + STATUS[k][LANG === "ta" ? 1 : 0] + " " + c[k] + "</em>"; }).join("");
+}
+function toast(t) { var el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600); }
+function addFav(id) {
+    if (favs.indexOf(id) === -1) { favs.push(id); save("tnFavs", favs); drawSaved(); toast(T("Project saved.", "திட்டம் சேமிக்கப்பட்டது.")); }
+    else { toast(T("Already saved.", "ஏற்கனவே சேமிக்கப்பட்டுள்ளது.")); }
+}
+function removeFav(id) { favs = favs.filter(function (x) { return x !== id; }); save("tnFavs", favs); drawSaved(); }
+
+/* ---------- GPS ---------- */
+function getGPS() {
+    var out = $("gpsResult");
+    if (!navigator.geolocation) { out.textContent = T("GPS is not supported in this browser.", "இந்த உலாவியில் GPS ஆதரவு இல்லை."); return; }
+    out.textContent = T("Getting your location…", "உங்கள் இடத்தைப் பெறுகிறது…");
+    navigator.geolocation.getCurrentPosition(function (pos) {
+        var la = pos.coords.latitude, lo = pos.coords.longitude;
+        $("lat").value = la.toFixed(6);
+        $("lng").value = lo.toFixed(6);
+        var msg = T("Location captured.", "இடம் பெறப்பட்டது.") + "<br>" + T("Latitude: ", "அட்சரேகை: ") + la.toFixed(6) +
+            "<br>" + T("Longitude: ", "தீர்க்கரேகை: ") + lo.toFixed(6) + "<br>" + T("Accuracy: ±", "துல்லியம்: ±") + Math.round(pos.coords.accuracy) + " m";
+        if (la < 7.7 || la > 13.9 || lo < 76 || lo > 80.7) {
+            msg += "<br>⚠️ " + T("This location is outside Tamil Nadu.", "இந்த இடம் தமிழ்நாட்டிற்கு வெளியே உள்ளது.");
+        }
+        out.innerHTML = msg;
+        setLink(la, lo);
+        if (map) {
+            layer.clearLayers();
+            L.circle([la, lo], { radius: pos.coords.accuracy, color: "#1e8449" }).addTo(layer);
+            L.marker([la, lo]).addTo(layer).bindPopup(T("You are here", "நீங்கள் இங்கே இருக்கிறீர்கள்"));
+            map.setView([la, lo], 16);
+        }
+    }, function (err) {
+        out.textContent = err.code === 1
+            ? T("Location permission denied. Allow location access, or enter latitude and longitude manually.", "இட அனுமதி மறுக்கப்பட்டது. அனுமதி அளிக்கவும் அல்லது எண்களைக் கைமுறையாக உள்ளிடவும்.")
+            : T("Could not get location. Enter it manually.", "இடத்தைப் பெற முடியவில்லை. கைமுறையாக உள்ளிடவும்.");
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+function saveSurvey() {
+    var la = parseFloat($("lat").value), lo = parseFloat($("lng").value), no = $("svNo").value.trim();
+    if (isNaN(la) || isNaN(lo) || la < -90 || la > 90 || lo < -180 || lo > 180) { toast(T("Enter a valid latitude and longitude.", "சரியான அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.")); return; }
+    if (!no) { toast(T("Enter the survey number.", "சர்வே எண்ணை உள்ளிடவும்.")); return; }
+    surveys.unshift({ no: no, lat: la, lng: lo, ds: $("svDistrict").value, tk: $("svTaluk").value, vl: $("svVillage").value, pt: $("svPatta").value, ow: $("svOwner").value });
+    save("tnSurveys", surveys);
+    ["lat","lng","svTaluk","svVillage","svNo","svPatta","svOwner"].forEach(function (id) { $(id).value = ""; });
+    drawSaved();
+    toast(T("Survey location saved.", "சர்வே இடம் சேமிக்கப்பட்டது."));
+}
+function viewSurvey(i) {
+    var s = surveys[i];
+    if (map) {
+        layer.clearLayers();
+        L.marker([s.lat, s.lng]).addTo(layer).bindPopup(T("Survey ", "சர்வே ") + s.no).openPopup();
+        map.setView([s.lat, s.lng], 17);
+    }
+    setLink(s.lat, s.lng);
+    $("mapResult").innerHTML = "<b>" + T("Survey ", "சர்வே ") + s.no + "</b><br>" + s.lat + ", " + s.lng;
+    $("mapSection").scrollIntoView({ behavior: "smooth" });
+}
+function delSurvey(i) { surveys.splice(i, 1); save("tnSurveys", surveys); drawSaved(); }
+
+/* ---------- COMPENSATION ---------- */
+function money(n) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+function calcComp() {
+    var area = parseFloat($("cArea").value), rate = parseFloat($("cRate").value);
+    var factor = parseFloat($("cFactor").value), u = UNITS[+$("cUnit").value];
+    if (isNaN(area) || isNaN(rate) || area <= 0 || rate <= 0) { $("compResult").textContent = T("Enter a valid area and market value.", "சரியான பரப்பு மற்றும் சந்தை மதிப்பை உள்ளிடவும்."); return; }
+    var acres = area * u[2];
+    var land = acres * rate * factor;
+    var solatium = land;
+    $("compResult").innerHTML =
+        T("Area: ", "பரப்பு: ") + acres.toFixed(3) + " " + T("acres", "ஏக்கர்") + "<br>" +
+        T("Land value × factor: ", "நில மதிப்பு × காரணி: ") + money(land) + "<br>" +
+        T("Solatium (100%): ", "ஆறுதல் தொகை (100%): ") + money(solatium) + "<br>" +
+        "<b>" + T("Estimated total: ", "மதிப்பிடப்பட்ட மொத்தம்: ") + money(land + solatium) + "</b>";
+}
+
+/* ---------- GRIEVANCE ---------- */
+function submitGrievance() {
+    var name = $("gName").value.trim(), text = $("gText").value.trim(), pid = $("gProject").value;
+    if (!name || !text || !pid) { $("gResult").textContent = T("Please fill name, project and grievance.", "பெயர், திட்டம், குறையை நிரப்பவும்."); return; }
+    var no = "GR-" + (1000 + grievances.length + 1);
+    grievances.unshift({ no: no, name: name, pid: pid, text: text });
+    save("tnGrievances", grievances);
+    $("gResult").innerHTML = "✅ " + T("Grievance submitted. Your number is ", "குறை சமர்ப்பிக்கப்பட்டது. உங்கள் எண்: ") + "<b>" + no + "</b>";
+    $("gName").value = ""; $("gText").value = "";
+}
+
+/* ---------- SAVED LISTS ---------- */
+function drawSaved() {
+    $("favList").innerHTML = favs.length ? favs.map(function (id) {
+        var p = PROJECTS.filter(function (x) { return x[0] === id; })[0];
+        if (!p) return "";
+        return '<div class="saved-item"><span>' + p[0] + " – " + pName(p) + '</span><span><button onclick="showProject(\'' + id + '\')">' + T("View", "காண்") + '</button><button class="ghost" onclick="removeFav(\'' + id + '\')">' + T("Remove", "நீக்கு") + "</button></span></div>";
+    }).join("") : "<p>" + T("No saved projects yet.", "சேமித்த திட்டங்கள் இல்லை.") + "</p>";
+    $("svList").innerHTML = surveys.length ? surveys.map(function (s, i) {
+        var place = [s.vl, s.tk, s.ds !== "" && s.ds != null ? dName(+s.ds) : ""].filter(Boolean).join(", ");
+        return '<div class="saved-item"><span><b>' + s.no + "</b> " + place + "<br><small>" + (+s.lat).toFixed(5) + ", " + (+s.lng).toFixed(5) + (s.pt ? " · " + T("Patta ", "பட்டா ") + s.pt : "") + (s.ow ? " · " + s.ow : "") + '</small></span><span><button onclick="viewSurvey(' + i + ')">' + T("View", "காண்") + '</button><a class="action-link ghost" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q=' + s.lat + "," + s.lng + '">' + T("Open", "திற") + '</a><button onclick="delSurvey(' + i + ')">' + T("Delete", "நீக்கு") + "</button></span></div>";
+    }).join("") : "<p>" + T("No saved survey locations yet.", "சேமித்த சர்வே இடங்கள் இல்லை.") + "</p>";
+}
+function clearAll() {
+    if (!confirm(T("Clear all saved projects and survey locations?", "சேமித்த அனைத்தையும் அழிக்கவா?"))) return;
+    favs = []; surveys = []; save("tnFavs", favs); save("tnSurveys", surveys); drawSaved();
+}
+
+/* ---------- LANGUAGE ---------- */
+document.querySelectorAll("[data-t]").forEach(function (el) { el.dataset.en = el.textContent; });
+function fillSelects() {
+    var keep = [$("mapDistrict").value, $("svDistrict").value, $("gProject").value, $("cUnit").value];
+    var opts = DIST.map(function (d, i) { return '<option value="' + i + '">' + d[LANG === "ta" ? 1 : 0] + "</option>"; }).join("");
+    $("mapDistrict").innerHTML = opts;
+    $("svDistrict").innerHTML = '<option value="">' + T("Select District", "மாவட்டம் தேர்க") + "</option>" + opts;
+    $("gProject").innerHTML = '<option value="">' + T("Select project", "திட்டத்தைத் தேர்க") + "</option>" +
+        PROJECTS.map(function (p) { return '<option value="' + p[0] + '">' + p[0] + " – " + pName(p) + "</option>"; }).join("");
+    $("cUnit").innerHTML = UNITS.map(function (u, i) { return '<option value="' + i + '">' + u[LANG === "ta" ? 1 : 0] + "</option>"; }).join("");
+    if (keep[0]) $("mapDistrict").value = keep[0];
+    if (keep[1]) $("svDistrict").value = keep[1];
+    if (keep[2]) $("gProject").value = keep[2];
+    if (keep[3]) $("cUnit").value = keep[3];
+}
+function setLang(l) {
+    LANG = l;
+    document.documentElement.lang = l;
+    document.querySelectorAll("[data-t]").forEach(function (el) { el.textContent = l === "ta" ? el.dataset.t : el.dataset.en; });
+    $("bEn").classList.toggle("on", l === "en");
+    $("bTa").classList.toggle("on", l === "ta");
+    fillSelects(); drawProjects(); drawSaved(); drawStats();
+}
+setLang(LANG);
+
+/* ---------- NAV HIGHLIGHT ---------- */
+(function () {
+    var links = document.querySelectorAll("#sideNav a");
+    if (!window.IntersectionObserver) return;
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            links.forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + e.target.id); });
+        });
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    ["top","problem","places","mapSection","gps","compensation","grievance","saved"].forEach(function (id) { var el = document.getElementById(id); if (el) io.observe(el); });
+})();
+</script>
+</body>
+</html>
