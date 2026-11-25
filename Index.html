@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Land Acquisition Portal - Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Madurai:wght@400;500;600;700&family=Noto+Serif+Tamil:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16241d;--muted:#586860;--g9:#123225;--g7:#1f5a40;--turmeric:#e3a81c;
+  --sans:"Hind Madurai","Noto Sans Tamil",Latha,Arial,sans-serif;--serif:"Noto Serif Tamil","Hind Madurai",Georgia,serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);color:var(--ink);min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr;background:#eef2ee}
+.art{background:var(--g9);color:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:48px}
+.art svg{position:absolute;inset:0;width:100%;height:100%}
+.art div{position:relative}
+.art h1{font-family:var(--serif);font-size:clamp(28px,3.4vw,42px);line-height:1.3;max-width:12em}
+.art p{margin-top:12px;color:#b9d0c3;font-size:18px}
+.art small{display:block;margin-top:28px;color:#b9d0c3;font-size:14px}
+.form{display:flex;align-items:center;justify-content:center;padding:32px}
+.box{width:100%;max-width:380px}
+.box h2{font-family:var(--serif);font-size:24px;color:var(--g7);margin-bottom:18px}
+label{display:block;font-weight:600;font-size:14px;margin-top:14px}
+input{width:100%;padding:12px;margin-top:6px;border:1px solid #b4c1b8;border-radius:6px;font:inherit;background:#fff}
+input:focus{outline:none;border-color:var(--g7);box-shadow:0 0 0 3px rgba(31,90,64,.18)}
+button{font:inherit;cursor:pointer}
+.go{width:100%;margin-top:22px;padding:12px;background:var(--g7);color:#fff;border:0;border-radius:6px;font-weight:600;font-size:16px}
+.go:hover{background:var(--g9)}
+button:focus-visible{outline:3px solid var(--turmeric);outline-offset:2px}
+.lang{margin-top:24px;display:flex;gap:8px}
+.lang button{padding:6px 16px;border-radius:999px;border:1px solid #b4c1b8;background:#fff;color:var(--g7);font-size:14px}
+.lang button.on{background:var(--g9);color:#fff;border-color:var(--g9)}
+@media (max-width:800px){body{grid-template-columns:1fr}.art{min-height:240px;padding:28px}.art small{display:none}}
+</style>
+</head>
+<body>
+<section class="art">
+    <svg viewBox="0 0 600 700" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+        <g fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M-10 40L160 20L190 150L-10 180Z"/><path d="M160 20L340 55L320 170L190 150Z"/><path d="M340 55L520 25L550 160L320 170Z"/><path d="M520 25L620 50L620 175L550 160Z"/>
+            <path d="M-10 180L190 150L215 290L-10 320Z"/><path d="M190 150L320 170L350 300L215 290Z"/><path d="M550 160L620 175L620 310L520 295Z"/>
+            <path d="M-10 320L215 290L240 430L-10 450Z"/><path d="M215 290L350 300L380 440L240 430Z"/><path d="M350 300L520 295L540 435L380 440Z"/><path d="M520 295L620 310L620 440L540 435Z"/>
+        </g>
+        <path d="M320 170L550 160L520 295L350 300Z" fill="#e3a81c" stroke="#e3a81c" stroke-width="2" stroke-dasharray="8 6" stroke-linejoin="round"/>
+        <g font-family="Hind Madurai,Arial,sans-serif" font-size="14" fill="rgba(255,255,255,.5)">
+            <text x="50" y="110">118/2</text><text x="230" y="100">119/1A</text><text x="400" y="110">121/4</text><text x="60" y="250">130/3B</text><text x="240" y="235">131/1</text><text x="90" y="385">140</text><text x="280" y="375">141/5</text><text x="430" y="380">142/1A</text>
+        </g>
+        <text x="395" y="240" font-family="Hind Madurai,Arial,sans-serif" font-size="17" font-weight="700" fill="#123225">132/4A</text>
+    </svg>
+    <div>
+        <h1 data-t="நில எடுப்பு இணையதளம்">Land Acquisition Portal</h1>
+        <p data-t="உங்கள் நில விவர உதவியாளர்">Your Smart Land Record Companion</p>
+        <small data-t="கணக்கெடுப்பு • பதிவு • இழப்பீடு">Survey • Record • Compensation</small>
+    </div>
+</section>
+<section class="form">
+    <div class="box">
+        <h2 data-t="உள்நுழை">Login</h2>
+        <form id="loginForm">
+            <label for="email" data-t="மின்னஞ்சல்">Email</label>
+            <input type="email" id="email" data-tp="மின்னஞ்சலை உள்ளிடவும்" placeholder="Enter your email" required>
+            <label for="password" data-t="கடவுச்சொல்">Password</label>
+            <input type="password" id="password" data-tp="கடவுச்சொல்லை உள்ளிடவும்" placeholder="Enter your password" required>
+            <button type="submit" class="go" data-t="உள்நுழை">Login</button>
+        </form>
+        <div class="lang">
+            <button type="button" id="bEn" class="on" onclick="setLang('en')">English</button>
+            <button type="button" id="bTa" onclick="setLang('ta')">தமிழ்</button>
+        </div>
+    </div>
+</section>
+<script>
+let LANG = new URLSearchParams(location.search).get("lang") || "en";
+document.querySelectorAll("[data-t]").forEach(function (el) { el.dataset.en = el.textContent; });
+document.querySelectorAll("[data-tp]").forEach(function (el) { el.dataset.enp = el.placeholder; });
+function setLang(l) {
+    LANG = l;
+    document.documentElement.lang = l;
+    document.querySelectorAll("[data-t]").forEach(function (el) { el.textContent = l === "ta" ? el.dataset.t : el.dataset.en; });
+    document.querySelectorAll("[data-tp]").forEach(function (el) { el.placeholder = l === "ta" ? el.dataset.tp : el.dataset.enp; });
+    document.getElementById("bEn").classList.toggle("on", l === "en");
+    document.getElementById("bTa").classList.toggle("on", l === "ta");
+}
+setLang(LANG);
+document.getElementById("loginForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var user = document.getElementById("email").value.trim();
+    window.location.href = "tn_dashboard.html?user=" + encodeURIComponent(user) + "&lang=" + LANG;
+});
+</script>
+</body>
+</html>
